@@ -5,27 +5,39 @@ import pickle
 from tensorflow.keras.preprocessing import image
 from backend.config import MODEL_PATH
 
-# ==============================
-# Load Model & Class Indices
-# ==============================
+# =========================================
+# Lazy Loading (IMPORTANT FOR RENDER)
+# =========================================
 
-print("Loading model from:", MODEL_PATH)
+model = None
+idx_to_class = None
 
-model = tf.keras.models.load_model(MODEL_PATH)
 
-CLASS_INDEX_PATH = os.path.join(
-    os.path.dirname(MODEL_PATH),
-    "class_indices.pkl"
-)
+def load_model_once():
+    global model, idx_to_class
 
-with open(CLASS_INDEX_PATH, "rb") as f:
-    class_indices = pickle.load(f)
+    if model is None:
+        print("🚀 Loading ML model...")
+        model = tf.keras.models.load_model(MODEL_PATH)
 
-idx_to_class = {v: k for k, v in class_indices.items()}
+        class_index_path = os.path.join(
+            os.path.dirname(MODEL_PATH),
+            "class_indices.pkl"
+        )
 
-# ==============================
+        with open(class_index_path, "rb") as f:
+            class_indices = pickle.load(f)
+
+        idx_to_class = {v: k for k, v in class_indices.items()}
+
+        print("✅ Model loaded successfully")
+
+    return model, idx_to_class
+
+
+# =========================================
 # Disease Advisory Database
-# ==============================
+# =========================================
 
 ADVISORY_DB = {
     "Tomato_Late_blight": {
@@ -66,13 +78,15 @@ ADVISORY_DB = {
     }
 }
 
-# ==============================
+
+# =========================================
 # Prediction Function
-# ==============================
+# =========================================
 
 def predict_image(img_path):
-
     try:
+        model, idx_to_class = load_model_once()
+
         img = image.load_img(img_path, target_size=(224, 224))
         img_array = image.img_to_array(img)
         img_array = np.expand_dims(img_array, axis=0)
@@ -125,6 +139,7 @@ def predict_image(img_path):
         }
 
     except Exception as e:
+        print("Prediction error:", str(e))
         return {
             "disease": "Error",
             "confidence": 0,
