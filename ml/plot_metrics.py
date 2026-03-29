@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pickle
 
 # Load history file
-with open("models/history.pkl", "rb") as f:
+with open("ml/models/history.pkl", "rb") as f:
     history = pickle.load(f)
 
 # Accuracy plot
